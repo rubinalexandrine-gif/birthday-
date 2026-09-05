@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Galaxy of Love 3D - Full Particle Heart</title>
+  <title>Galaxy of Love 3D</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, html { width: 100%; height: 100%; overflow: hidden; background-color: #030005; font-family: 'Segoe UI', Arial, sans-serif; }
@@ -15,7 +15,7 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 10;
-      background: rgba(15, 2, 12, 0.8);
+      background: rgba(15, 2, 12, 0.85);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 0, 100, 0.4);
@@ -27,7 +27,7 @@
       max-width: 90%;
       width: 380px;
     }
-    .overlay-card h2 { font-size: 1.5rem; color: #ff3377; margin-bottom: 6px; font-style: italic; letter-spacing: 1px; }
+    .overlay-card h2 { font-size: 1.5rem; color: #ff3377; margin-bottom: 6px; font-style: italic; }
     .overlay-card p { font-size: 0.85rem; color: #e5e5e5; line-height: 1.4; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -47,8 +47,7 @@
     scene.fog = new THREE.FogExp2(0x030005, 0.0015);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    // Positionnement de la caméra pour incliner la galaxie et voir le cœur au-dessus
-    camera.position.set(0, -18, 22);
+    camera.position.set(0, -16, 22);
     camera.lookAt(0, 2, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -56,7 +55,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // Texture douce pour les particules de neón
+    // Texture pour les paillettes
     const canvas = document.createElement('canvas');
     canvas.width = 16; canvas.height = 16;
     const ctx = canvas.getContext('2d');
@@ -67,9 +66,7 @@
     ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(8, 8, 8, 0, Math.PI * 2); ctx.fill();
     const particleTexture = new THREE.CanvasTexture(canvas);
 
-    // -------------------------------------------------------------
-    // 1. LE GRAND CŒUR ROUGE 3D (Formé par équation paramétrique)
-    // -------------------------------------------------------------
+    // 1. LE GRAND CŒUR EN PARTICULES
     const heartParticlesCount = 12000;
     const heartGeo = new THREE.BufferGeometry();
     const heartPos = new Float32Array(heartParticlesCount * 3);
@@ -79,7 +76,6 @@
     const colorEdge = new THREE.Color(0xff66aa);
 
     for (let i = 0; i < heartParticlesCount; i++) {
-      // Équation 3D du cœur
       const t = Math.random() * Math.PI * 2;
       const u = (Math.random() - 0.5) * Math.PI;
 
@@ -87,13 +83,11 @@
       let y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
       let z = u * 4;
 
-      // Dispersion/Épaisseur du contour
       const factor = 0.45 + Math.random() * 0.1;
       x *= factor;
       y *= factor;
       z *= factor;
 
-      // Positionner le cœur au centre, au-dessus du trou noir
       heartPos[i * 3] = x;
       heartPos[i * 3 + 1] = y + 5; 
       heartPos[i * 3 + 2] = z;
@@ -116,12 +110,10 @@
       depthWrite: false
     });
 
-    const 3DHeart = new THREE.Points(heartGeo, heartMat);
-    scene.add(3DHeart);
+    const heartMesh = new THREE.Points(heartGeo, heartMat);
+    scene.add(heartMesh);
 
-    // -------------------------------------------------------------
-    // 2. LA GALAXIE DE FOND & LE TROU NOIR
-    // -------------------------------------------------------------
+    // 2. GALAXIE & TROU NOIR
     const galaxyCount = 8000;
     const galaxyGeo = new THREE.BufferGeometry();
     const galaxyPos = new Float32Array(galaxyCount * 3);
@@ -140,7 +132,7 @@
       const z = (Math.random() - 0.5) * 2;
 
       galaxyPos[i * 3] = x;
-      galaxyPos[i * 3 + 1] = y - 4; // Abaissé sous le cœur
+      galaxyPos[i * 3 + 1] = y - 4;
       galaxyPos[i * 3 + 2] = z - 2;
 
       const c = gColor1.clone().lerp(gColor2, Math.random());
@@ -162,33 +154,26 @@
     });
 
     const galaxy = new THREE.Points(galaxyGeo, galaxyMat);
-    galaxy.rotation.x = Math.PI / 2.3; // Inclinaison du disque
+    galaxy.rotation.x = Math.PI / 2.3;
     scene.add(galaxy);
 
-    // Trou noir au centre de la galaxie
     const holeGeo = new THREE.SphereGeometry(2, 32, 32);
     const holeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const blackHole = new THREE.Mesh(holeGeo, holeMat);
     blackHole.position.set(0, -4, -2);
     scene.add(blackHole);
 
-    // -------------------------------------------------------------
     // 3. ANIMATION
-    // -------------------------------------------------------------
     let clock = new THREE.Clock();
 
     function animate() {
       requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
 
-      // Pulsation / Battement du cœur 3D
       const beat = 1 + Math.sin(elapsedTime * 3) * 0.05;
-      3DHeart.scale.set(beat, beat, beat);
+      heartMesh.scale.set(beat, beat, beat);
+      heartMesh.rotation.y = Math.sin(elapsedTime * 0.5) * 0.15;
 
-      // Légère oscillation du cœur
-      3DHeart.rotation.y = Math.sin(elapsedTime * 0.5) * 0.15;
-
-      // Rotation de la galaxie sous le cœur
       galaxy.rotation.z -= 0.002;
 
       renderer.render(scene, camera);
